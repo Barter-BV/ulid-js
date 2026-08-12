@@ -33,10 +33,11 @@
   },
   "scripts": {
     "test": "node test/runner.js",
-    "prepublishOnly": "npm run build && npm test && npm pack --dry-run",
+    "prepublish-only": "npm run build && npm test && npm pack --dry-run",
     "release": "sh scripts/release.sh",
     "lint": "echo 'No linter configured'",
-    "build": "echo 'No build step required'"
+    "build": "echo 'No build step required'",
+    "clean": "rm -rf dist node_modules package-lock.json"
   },
   "files": [
     "src/",
