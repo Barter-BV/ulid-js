@@ -5,8 +5,8 @@
 /**
  * Base pULID error class
  */
-class pULIDError extends Error {
-  constructor(message) {
+export class pULIDError extends Error {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDError';
     Error.captureStackTrace && Error.captureStackTrace(this, this.constructor);
@@ -16,8 +16,8 @@ class pULIDError extends Error {
 /**
  * Error thrown when parsing a pULID string fails
  */
-class pULIDParseError extends pULIDError {
-  constructor(message) {
+export class pULIDParseError extends pULIDError {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDParseError';
   }
@@ -26,8 +26,8 @@ class pULIDParseError extends pULIDError {
 /**
  * Error thrown when an invalid scope value is used
  */
-class pULIDScopeError extends pULIDError {
-  constructor(message) {
+export class pULIDScopeError extends pULIDError {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDScopeError';
   }
@@ -36,8 +36,8 @@ class pULIDScopeError extends pULIDError {
 /**
  * Error thrown when timestamp operations fail
  */
-class pULIDTimestampError extends pULIDError {
-  constructor(message) {
+export class pULIDTimestampError extends pULIDError {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDTimestampError';
   }
@@ -46,8 +46,8 @@ class pULIDTimestampError extends pULIDError {
 /**
  * Error thrown when UUID conversion operations fail
  */
-class pULIDUUIDError extends pULIDError {
-  constructor(message) {
+export class pULIDUUIDError extends pULIDError {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDUUIDError';
   }
@@ -56,18 +56,9 @@ class pULIDUUIDError extends pULIDError {
 /**
  * Error thrown when entropy generation fails
  */
-class pULIDEntropyError extends pULIDError {
-  constructor(message) {
+export class pULIDEntropyError extends pULIDError {
+  constructor(message: string) {
     super(message);
     this.name = 'pULIDEntropyError';
   }
 }
-
-module.exports = {
-  pULIDError,
-  pULIDParseError,
-  pULIDScopeError,
-  pULIDTimestampError,
-  pULIDUUIDError,
-  pULIDEntropyError
-};

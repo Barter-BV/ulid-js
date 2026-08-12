@@ -1,5 +1,8 @@
 # Development files
 test/
+src/
+tsconfig.json
+scripts/
 *.test.js
 .github/
 .git/

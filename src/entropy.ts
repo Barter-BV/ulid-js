@@ -3,13 +3,17 @@
  * Generates 8 bytes of cryptographically secure random data
  */
 
-const { pULIDEntropyError } = require('./errors');
+import { pULIDEntropyError } from './errors';
+
+type RandomBytes = (length: number) => Uint8Array;
 
 /**
  * Cross-platform entropy generator
  * Supports both browser (crypto.getRandomValues) and Node.js (crypto.randomBytes)
  */
-class EntropyGenerator {
+export class EntropyGenerator {
+  private readonly getRandomBytes: RandomBytes;
+
   constructor() {
     this.getRandomBytes = this.initRandomSource();
   }
@@ -18,11 +22,12 @@ class EntropyGenerator {
    * Generate 8 bytes of cryptographically secure entropy
    * @returns {Uint8Array} 8 bytes of random data
    */
-  generate() {
+  generate(): Uint8Array {
     try {
       return this.getRandomBytes(8);
-    } catch (error) {
-      throw new pULIDEntropyError(`Failed to generate entropy: ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new pULIDEntropyError(`Failed to generate entropy: ${message}`);
     }
   }
 
@@ -31,27 +36,15 @@ class EntropyGenerator {
    * @returns {Function} Function that generates random bytes
    * @private
    */
-  initRandomSource() {
-    // Browser environment - use Web Crypto API
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-      return (length) => {
+  private initRandomSource(): RandomBytes {
+    if (globalThis.crypto?.getRandomValues) {
+      return (length: number) => {
         const bytes = new Uint8Array(length);
-        crypto.getRandomValues(bytes);
+        globalThis.crypto.getRandomValues(bytes);
         return bytes;
       };
     }
-    
-    // Node.js environment - use crypto module
-    if (typeof require !== 'undefined') {
-      try {
-        const crypto = require('crypto');
-        return (length) => new Uint8Array(crypto.randomBytes(length));
-      } catch (error) {
-        // crypto module not available
-      }
-    }
-    
-    // Fallback error - no secure random source available
+
     throw new pULIDEntropyError('No secure random number generator available');
   }
 
@@ -60,8 +53,8 @@ class EntropyGenerator {
    * @param {number} count - Number of entropy values to generate
    * @returns {Uint8Array[]} Array of entropy byte arrays
    */
-  generateBatch(count) {
-    const results = [];
+  generateBatch(count: number): Uint8Array[] {
+    const results: Uint8Array[] = [];
     for (let i = 0; i < count; i++) {
       results.push(this.generate());
     }
@@ -72,7 +65,7 @@ class EntropyGenerator {
    * Test if entropy generation is working
    * @returns {boolean} True if entropy generation is functional
    */
-  test() {
+  test(): boolean {
     try {
       const entropy1 = this.generate();
       const entropy2 = this.generate();
@@ -94,13 +87,13 @@ class EntropyGenerator {
 /**
  * Default entropy generator instance
  */
-const defaultEntropyGenerator = new EntropyGenerator();
+export const defaultEntropyGenerator = new EntropyGenerator();
 
 /**
  * Generate 8 bytes of entropy using the default generator
  * @returns {Uint8Array} 8 bytes of random data
  */
-function generateEntropy() {
+export function generateEntropy(): Uint8Array {
   return defaultEntropyGenerator.generate();
 }
 
@@ -108,13 +101,6 @@ function generateEntropy() {
  * Test entropy generation functionality
  * @returns {boolean} True if entropy generation works
  */
-function testEntropy() {
+export function testEntropy(): boolean {
   return defaultEntropyGenerator.test();
 }
-
-module.exports = {
-  EntropyGenerator,
-  defaultEntropyGenerator,
-  generateEntropy,
-  testEntropy
-};

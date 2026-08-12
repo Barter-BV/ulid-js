@@ -4,7 +4,7 @@
  * Test our implementation against the proper golang README examples
  */
 
-const { parse, pULID } = require('../src');
+const { parse, pULID } = require('..');
 
 console.log('Testing against proper golang README examples:');
 console.log('='.repeat(50));

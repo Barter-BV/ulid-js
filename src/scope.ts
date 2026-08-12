@@ -3,12 +3,17 @@
  * Handles scope validation and conversion to/from bytes
  */
 
-const { pULIDScopeError } = require('./errors');
+import { pULIDScopeError } from './errors';
+import type { ScopeInfo } from './types';
 
 /**
  * Scope manager class for pULID scope validation and handling
  */
-class ScopeManager {
+export class ScopeManager {
+  readonly PROTECTED_SCOPES: number[];
+  readonly MIN_SCOPE: number;
+  readonly MAX_SCOPE: number;
+
   constructor() {
     this.PROTECTED_SCOPES = []; // No protected scopes
     this.MIN_SCOPE = 0;
@@ -21,7 +26,7 @@ class ScopeManager {
    * @returns {boolean} True if valid
    * @throws {pULIDScopeError} If scope is invalid
    */
-  validate(scope) {
+  validate(scope: number): true | number {
     // Check if scope is a number
     if (typeof scope !== 'number' || !Number.isInteger(scope)) {
       throw new pULIDScopeError(`Invalid scope type: ${typeof scope}. Scope must be an integer`);
@@ -52,9 +57,9 @@ class ScopeManager {
    * @param {number} scope - Scope value to check
    * @returns {boolean} True if valid, false otherwise
    */
-  isValid(scope) {
+  isValid(scope: number): boolean {
     try {
-      return this.validate(scope);
+      return Boolean(this.validate(scope));
     } catch (error) {
       return false;
     }
@@ -65,7 +70,7 @@ class ScopeManager {
    * @param {number} scope - Scope value (0-65535, where 0 becomes MAX_SCOPE)
    * @returns {Uint8Array} 2-byte array
    */
-  scopeToBytes(scope) {
+  scopeToBytes(scope: number): Uint8Array {
     // If scope is 0, use MAX_SCOPE instead
     const actualScope = scope === 0 ? this.MAX_SCOPE : scope;
 
@@ -86,7 +91,7 @@ class ScopeManager {
    * @returns {number} Scope value
    * @throws {pULIDScopeError} If bytes are invalid
    */
-  bytesToScope(bytes) {
+  bytesToScope(bytes: Uint8Array): number {
     if (!bytes || bytes.length !== 16) {
       throw new pULIDScopeError(`Invalid ULID bytes: expected 16 bytes, got ${bytes ? bytes.length : 0}`);
     }
@@ -106,7 +111,7 @@ class ScopeManager {
    * Get all valid scope values (for testing purposes)
    * @returns {Object} Object with min, max, and protected scopes
    */
-  getScopeInfo() {
+  getScopeInfo(): ScopeInfo {
     return {
       min: this.MIN_SCOPE,
       max: this.MAX_SCOPE,
@@ -119,14 +124,14 @@ class ScopeManager {
 /**
  * Default scope manager instance
  */
-const defaultScopeManager = new ScopeManager();
+export const defaultScopeManager = new ScopeManager();
 
 /**
  * Validate a scope using the default manager
  * @param {number} scope - Scope to validate
  * @returns {boolean} True if valid
  */
-function validateScope(scope) {
+export function validateScope(scope: number): true | number {
   return defaultScopeManager.validate(scope);
 }
 
@@ -135,7 +140,7 @@ function validateScope(scope) {
  * @param {number} scope - Scope to check
  * @returns {boolean} True if valid
  */
-function isValidScope(scope) {
+export function isValidScope(scope: number): boolean {
   return defaultScopeManager.isValid(scope);
 }
 
@@ -144,7 +149,7 @@ function isValidScope(scope) {
  * @param {number} scope - Scope value
  * @returns {Uint8Array} 2-byte array
  */
-function scopeToBytes(scope) {
+export function scopeToBytes(scope: number): Uint8Array {
   return defaultScopeManager.scopeToBytes(scope);
 }
 
@@ -153,15 +158,6 @@ function scopeToBytes(scope) {
  * @param {Uint8Array} bytes - 2-byte array
  * @returns {number} Scope value
  */
-function bytesToScope(bytes) {
+export function bytesToScope(bytes: Uint8Array): number {
   return defaultScopeManager.bytesToScope(bytes);
 }
-
-module.exports = {
-  ScopeManager,
-  defaultScopeManager,
-  validateScope,
-  isValidScope,
-  scopeToBytes,
-  bytesToScope
-};

@@ -3,25 +3,34 @@
  * Combines timestamp, scope, and entropy into a pULID identifier
  */
 
-const { encodeBase32, decodeBase32, bytesToScope, bytesToTimestamp, bytesToEntropy } = require('./encoding');
-const { pULIDError, pULIDParseError } = require('./errors');
-const { generateEntropy } = require('./entropy');
-const { validateScope, scopeToBytes } = require('./scope');
-const { validateTimestamp, timestampToBytes } = require('./timestamp');
-const { formatAsUUID, uuidToBytes } = require('./uuid');
+import { bytesToEntropy, bytesToScope, bytesToTimestamp, decodeBase32, encodeBase32 } from './encoding';
+import { generateEntropy } from './entropy';
+import { pULIDError, pULIDParseError } from './errors';
+import { scopeToBytes, validateScope } from './scope';
+import { timestampToBytes, validateTimestamp } from './timestamp';
+import type { GenerateOptions, PULIDJSON } from './types';
+import { formatAsUUID, uuidToBytes } from './uuid';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 /**
  * pULID class representing a Pixie ULID identifier
  * Structure: 6 bytes timestamp + 2 bytes scope + 8 bytes entropy = 16 bytes total
  */
-class pULID {
+export class pULID {
+  readonly timestamp: number;
+  readonly scope: number;
+  readonly entropy: Uint8Array;
+
   /**
    * Create a new pULID instance
    * @param {number} timestamp - Unix timestamp in milliseconds
    * @param {number} scope - Scope value (1-65534)
    * @param {Uint8Array} entropy - 8 bytes of entropy
    */
-  constructor(timestamp, scope, entropy) {
+  constructor(timestamp: number, scope: number, entropy: Uint8Array) {
     // Validate inputs
     validateTimestamp(timestamp);
 
@@ -46,7 +55,7 @@ class pULID {
    * Convert pULID to string representation (ULID format)
    * @returns {string} 26-character Base32 encoded string
    */
-  toString() {
+  toString(): string {
     const bytes = this.toBytes();
     return encodeBase32(bytes);
   }
@@ -55,7 +64,7 @@ class pULID {
    * Convert pULID to UUID format
    * @returns {string} UUID string in format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
    */
-  toUUID() {
+  toUUID(): string {
     const bytes = this.toBytes();
     return formatAsUUID(bytes);
   }
@@ -64,7 +73,7 @@ class pULID {
    * Convert pULID to ULID format
    * @returns {string} ULID string in format
    */
-  toULID() {
+  toULID(): string {
     return this.toString();
   }
 
@@ -72,7 +81,7 @@ class pULID {
    * Convert pULID to 16-byte array
    * @returns {Uint8Array} 16-byte array (6+2+8 structure)
    */
-  toBytes() {
+  toBytes(): Uint8Array {
     const timestampBytes = timestampToBytes(this.timestamp);
     const scopeBytes = scopeToBytes(this.scope);
     
@@ -89,7 +98,7 @@ class pULID {
    * Get timestamp as Date object
    * @returns {Date} Date object representing the timestamp
    */
-  getTime() {
+  getTime(): Date {
     return new Date(this.timestamp);
   }
 
@@ -97,7 +106,7 @@ class pULID {
    * Get timestamp as milliseconds
    * @returns {number} Unix timestamp in milliseconds
    */
-  getTimestamp() {
+  getTimestamp(): number {
     return this.timestamp;
   }
 
@@ -105,7 +114,7 @@ class pULID {
    * Get scope value
    * @returns {number} Scope value (1-65534)
    */
-  getScope() {
+  getScope(): number {
     return this.scope;
   }
 
@@ -113,7 +122,7 @@ class pULID {
    * Get entropy bytes
    * @returns {Uint8Array} Copy of the 8-byte entropy array
    */
-  getEntropy() {
+  getEntropy(): Uint8Array {
     return new Uint8Array(this.entropy);
   }
 
@@ -122,7 +131,7 @@ class pULID {
    * @param {pULID} other - Another pULID instance
    * @returns {number} -1, 0, or 1 for less than, equal, or greater than
    */
-  compare(other) {
+  compare(other: pULID): number {
     if (!(other instanceof pULID)) {
       throw new pULIDError('Cannot compare with non-pULID object');
     }
@@ -141,7 +150,7 @@ class pULID {
    * @param {pULID} other - Another pULID instance
    * @returns {boolean} True if equal
    */
-  equals(other) {
+  equals(other: pULID): boolean {
     return this.compare(other) === 0;
   }
 
@@ -149,7 +158,7 @@ class pULID {
    * Get JSON representation
    * @returns {Object} Object with timestamp, scope, entropy, ulid, and uuid
    */
-  toJSON() {
+  toJSON(): PULIDJSON {
     return {
       timestamp: this.timestamp,
       scope: this.scope,
@@ -168,10 +177,10 @@ class pULID {
    * @param {Uint8Array} [options.entropy] - Custom entropy (defaults to random)
    * @returns {pULID} New pULID instance
    */
-  static generate(options = {}) {
-    const timestamp = options.timestamp || Date.now();
-    const scope = options.scope || 1;
-    const entropy = options.entropy || generateEntropy();
+  static generate(options: GenerateOptions = {}): pULID {
+    const timestamp = options.timestamp ?? Date.now();
+    const scope = options.scope ?? 1;
+    const entropy = options.entropy ?? generateEntropy();
 
     return new pULID(timestamp, scope, entropy);
   }
@@ -182,7 +191,7 @@ class pULID {
    * @returns {pULID} Parsed pULID instance
    * @throws {pULIDParseError} If string is invalid
    */
-  static parse(string) {
+  static parse(string: string): pULID {
     if (typeof string !== 'string') {
       throw new pULIDParseError(`Invalid input type: ${typeof string}. Expected string`);
     }
@@ -194,8 +203,8 @@ class pULID {
     try {
       const bytes = decodeBase32(string);
       return pULID.fromBytes(bytes);
-    } catch (error) {
-      throw new pULIDParseError(`Failed to parse ULID string: ${error.message}`);
+    } catch (error: unknown) {
+      throw new pULIDParseError(`Failed to parse ULID string: ${errorMessage(error)}`);
     }
   }
 
@@ -205,7 +214,7 @@ class pULID {
    * @returns {pULID} New pULID instance
    * @throws {pULIDParseError} If bytes are invalid
    */
-  static fromBytes(bytes) {
+  static fromBytes(bytes: Uint8Array): pULID {
     if (!bytes || bytes.length !== 16) {
       throw new pULIDParseError(`Invalid byte array: expected 16 bytes, got ${bytes ? bytes.length : 0}`);
     }
@@ -216,8 +225,8 @@ class pULID {
       const entropy = bytesToEntropy(bytes);
 
       return new pULID(timestamp, scope, entropy);
-    } catch (error) {
-      throw new pULIDParseError(`Failed to parse bytes: ${error.message}`);
+    } catch (error: unknown) {
+      throw new pULIDParseError(`Failed to parse bytes: ${errorMessage(error)}`);
     }
   }
 
@@ -227,12 +236,12 @@ class pULID {
    * @returns {pULID} New pULID instance
    * @throws {pULIDParseError} If UUID is invalid
    */
-  static fromUUID(uuid) {
+  static fromUUID(uuid: string): pULID {
     try {
       const bytes = uuidToBytes(uuid);
       return pULID.fromBytes(bytes);
-    } catch (error) {
-      throw new pULIDParseError(`Failed to parse UUID: ${error.message}`);
+    } catch (error: unknown) {
+      throw new pULIDParseError(`Failed to parse UUID: ${errorMessage(error)}`);
     }
   }
 
@@ -241,7 +250,7 @@ class pULID {
    * @param {string} string - String to validate
    * @returns {boolean} True if valid pULID string
    */
-  static isValid(string) {
+  static isValid(string: string): boolean {
     try {
       pULID.parse(string);
       return true;
@@ -251,29 +260,13 @@ class pULID {
   }
 
   /**
-   * Create pULID with specific entity scope
-   * @param {string} entityType - Entity type name
-   * @param {Object} options - Additional options
-   * @returns {pULID} New pULID instance with entity-specific scope
-   */
-  static forEntity(entityType, options = {}) {
-    const { defaultScopeManager } = require('./scope');
-    const scope = defaultScopeManager.getScopeForEntity(entityType);
-    
-    return pULID.generate({
-      ...options,
-      scope
-    });
-  }
-
-  /**
    * Generate multiple pULIDs at once
    * @param {number} count - Number of pULIDs to generate
    * @param {Object} options - Generation options
    * @returns {pULID[]} Array of pULID instances
    */
-  static generateBatch(count, options = {}) {
-    const results = [];
+  static generateBatch(count: number, options: GenerateOptions = {}): pULID[] {
+    const results: pULID[] = [];
     for (let i = 0; i < count; i++) {
       results.push(pULID.generate(options));
     }
@@ -285,11 +278,7 @@ class pULID {
    * @param {pULID[]} pulids - Array of pULID instances
    * @returns {pULID[]} Sorted array
    */
-  static sort(pulids) {
+  static sort(pulids: pULID[]): pULID[] {
     return pulids.slice().sort((a, b) => a.compare(b));
   }
 }
-
-module.exports = {
-  pULID
-};

@@ -3,12 +3,16 @@
  * Manages 6-byte timestamp conversion and validation
  */
 
-const { pULIDTimestampError } = require('./errors');
+import { pULIDTimestampError } from './errors';
+import type { TimestampInfo } from './types';
 
 /**
  * Timestamp generator and handler for pULID
  */
-class TimestampGenerator {
+export class TimestampGenerator {
+  readonly MAX_TIMESTAMP: number;
+  readonly MIN_TIMESTAMP: number;
+
   constructor() {
     // Maximum timestamp value for 48-bit (6 bytes)
     // 2^48 - 1 = 281474976710655 (year 10889)
@@ -20,7 +24,7 @@ class TimestampGenerator {
    * Generate current timestamp
    * @returns {number} Current Unix timestamp in milliseconds
    */
-  generate() {
+  generate(): number {
     return Date.now();
   }
 
@@ -30,7 +34,7 @@ class TimestampGenerator {
    * @returns {boolean} True if valid
    * @throws {pULIDTimestampError} If timestamp is invalid
    */
-  validate(timestamp) {
+  validate(timestamp: number): true {
     if (typeof timestamp !== 'number' || !Number.isInteger(timestamp)) {
       throw new pULIDTimestampError(`Invalid timestamp type: ${typeof timestamp}. Timestamp must be an integer`);
     }
@@ -51,7 +55,7 @@ class TimestampGenerator {
    * @param {number} timestamp - Timestamp to check
    * @returns {boolean} True if valid
    */
-  isValid(timestamp) {
+  isValid(timestamp: number): boolean {
     try {
       return this.validate(timestamp);
     } catch (error) {
@@ -64,7 +68,7 @@ class TimestampGenerator {
    * @param {number} timestamp - Unix timestamp in milliseconds
    * @returns {Uint8Array} 6-byte array
    */
-  timestampToBytes(timestamp) {
+  timestampToBytes(timestamp: number): Uint8Array {
     this.validate(timestamp);
     
     const bytes = new Uint8Array(6);
@@ -81,7 +85,7 @@ class TimestampGenerator {
    * @returns {number} Unix timestamp in milliseconds
    * @throws {pULIDTimestampError} If bytes are invalid
    */
-  bytesToTimestamp(bytes) {
+  bytesToTimestamp(bytes: Uint8Array): number {
     if (!bytes || bytes.length !== 16) {
       throw new pULIDTimestampError(`Invalid ULID bytes: expected 16 bytes, got ${bytes ? bytes.length : 0}`);
     }
@@ -102,7 +106,7 @@ class TimestampGenerator {
    * @param {number} timestamp - Unix timestamp in milliseconds
    * @returns {Date} Date object
    */
-  timestampToDate(timestamp) {
+  timestampToDate(timestamp: number): Date {
     this.validate(timestamp);
     return new Date(timestamp);
   }
@@ -112,7 +116,7 @@ class TimestampGenerator {
    * @param {Date} date - Date object
    * @returns {number} Unix timestamp in milliseconds
    */
-  dateToTimestamp(date) {
+  dateToTimestamp(date: Date): number {
     if (!(date instanceof Date)) {
       throw new pULIDTimestampError(`Invalid date type: ${typeof date}. Expected Date object`);
     }
@@ -130,7 +134,7 @@ class TimestampGenerator {
    * Get timestamp info for debugging
    * @returns {Object} Object with min, max timestamp values
    */
-  getTimestampInfo() {
+  getTimestampInfo(): TimestampInfo {
     return {
       min: this.MIN_TIMESTAMP,
       max: this.MAX_TIMESTAMP,
@@ -145,8 +149,8 @@ class TimestampGenerator {
    * @param {string|Date} date - Date string or Date object
    * @returns {number} Unix timestamp in milliseconds
    */
-  timestampFor(date) {
-    let dateObj;
+  timestampFor(date: string | Date): number {
+    let dateObj: Date;
     
     if (typeof date === 'string') {
       dateObj = new Date(date);
@@ -164,7 +168,7 @@ class TimestampGenerator {
    * @param {number} timestamp - Timestamp to check
    * @returns {boolean} True if timestamp is in the future
    */
-  isFuture(timestamp) {
+  isFuture(timestamp: number): boolean {
     this.validate(timestamp);
     return timestamp > this.generate();
   }
@@ -174,7 +178,7 @@ class TimestampGenerator {
    * @param {number} timestamp - Timestamp to check
    * @returns {boolean} True if timestamp is in the past
    */
-  isPast(timestamp) {
+  isPast(timestamp: number): boolean {
     this.validate(timestamp);
     return timestamp < this.generate();
   }
@@ -183,13 +187,13 @@ class TimestampGenerator {
 /**
  * Default timestamp generator instance
  */
-const defaultTimestampGenerator = new TimestampGenerator();
+export const defaultTimestampGenerator = new TimestampGenerator();
 
 /**
  * Generate current timestamp using default generator
  * @returns {number} Current Unix timestamp in milliseconds
  */
-function generateTimestamp() {
+export function generateTimestamp(): number {
   return defaultTimestampGenerator.generate();
 }
 
@@ -198,7 +202,7 @@ function generateTimestamp() {
  * @param {number} timestamp - Timestamp to validate
  * @returns {boolean} True if valid
  */
-function validateTimestamp(timestamp) {
+export function validateTimestamp(timestamp: number): true {
   return defaultTimestampGenerator.validate(timestamp);
 }
 
@@ -207,7 +211,7 @@ function validateTimestamp(timestamp) {
  * @param {number} timestamp - Timestamp to check
  * @returns {boolean} True if valid
  */
-function isValidTimestamp(timestamp) {
+export function isValidTimestamp(timestamp: number): boolean {
   return defaultTimestampGenerator.isValid(timestamp);
 }
 
@@ -216,7 +220,7 @@ function isValidTimestamp(timestamp) {
  * @param {number} timestamp - Timestamp value
  * @returns {Uint8Array} 6-byte array
  */
-function timestampToBytes(timestamp) {
+export function timestampToBytes(timestamp: number): Uint8Array {
   return defaultTimestampGenerator.timestampToBytes(timestamp);
 }
 
@@ -225,16 +229,6 @@ function timestampToBytes(timestamp) {
  * @param {Uint8Array} bytes - 6-byte array
  * @returns {number} Timestamp value
  */
-function bytesToTimestamp(bytes) {
+export function bytesToTimestamp(bytes: Uint8Array): number {
   return defaultTimestampGenerator.bytesToTimestamp(bytes);
 }
-
-module.exports = {
-  TimestampGenerator,
-  defaultTimestampGenerator,
-  generateTimestamp,
-  validateTimestamp,
-  isValidTimestamp,
-  timestampToBytes,
-  bytesToTimestamp
-};

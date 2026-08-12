@@ -2,6 +2,8 @@
 
 This repository contains comprehensive guidelines for implementing a pULID (Pixie ULID) library in JavaScript, based on patterns from the ulid-go project.
 
+The implementation is written in strict TypeScript 7, emits CommonJS for Node.js 20+, and includes generated type declarations.
+
 ## What is pULID?
 
 pULID is a 128-bit identifier that combines:
@@ -37,7 +39,7 @@ export GH_PACKAGES_TOKEN="<github-token>"
 npm run release
 ```
 
-### Expected API Usage
+### API Usage
 
 ```javascript
 const { pulid, pULID, pULIDGenerator } = require('@barter-bv/ulid-js');
@@ -63,6 +65,16 @@ const id2 = generator.generate({ scope: 1000 });
 
 // Convert to UUID format
 console.log(parsed.toUUID()); // "0194AA0E-DCDE-0001-53F2-18257F60B037"
+```
+
+TypeScript consumers receive the same named API and generated declarations:
+
+```typescript
+import { pulid, parse, type GenerateOptions } from '@barter-bv/ulid-js';
+
+const options: GenerateOptions = { scope: 567 };
+const id = pulid(options);
+const parsed = parse(id);
 ```
 
 ## Implementation Checklist
@@ -174,15 +186,16 @@ The guidelines include comprehensive testing recommendations:
 ```
 your-pulid-library/
 ├── src/
-│   ├── pulid.js          # Main pULID class
-│   ├── generator.js      # pULIDGenerator class
-│   ├── encoding.js       # Base32 encoding/decoding for pULID
-│   ├── entropy.js        # 8-byte entropy generation
-│   ├── timestamp.js      # 6-byte timestamp handling
-│   ├── scope.js          # Scope management and validation
-│   ├── uuid.js           # UUID compatibility functions
-│   ├── errors.js         # pULID-specific error classes
-│   └── index.js          # Main exports
+│   ├── pulid.ts          # Main pULID class
+│   ├── generator.ts      # pULIDGenerator class
+│   ├── encoding.ts       # Base32 encoding/decoding for pULID
+│   ├── entropy.ts        # 8-byte entropy generation
+│   ├── timestamp.ts      # 6-byte timestamp handling
+│   ├── scope.ts          # Scope management and validation
+│   ├── uuid.ts           # UUID compatibility functions
+│   ├── errors.ts         # pULID-specific error classes
+│   └── index.ts          # Main exports
+├── dist/                 # Compiled CommonJS and declarations
 ├── test/
 │   ├── pulid.test.js     # Core pULID functionality
 │   ├── generator.test.js # Generator tests
@@ -190,8 +203,7 @@ your-pulid-library/
 │   ├── uuid.test.js      # UUID compatibility tests
 │   ├── encoding.test.js  # Base32 encoding tests
 │   └── performance.test.js # Benchmarks
-├── types/
-│   └── index.d.ts        # TypeScript definitions
+├── tsconfig.json
 └── README.md
 ```
 

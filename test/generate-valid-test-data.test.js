@@ -5,7 +5,7 @@
  * This will create proper test data where ULID and UUID actually correspond
  */
 
-const { pulid, pULID, parse, forEntity } = require('../src');
+const { pulid, pULID, parse } = require('..');
 
 console.log('🔧 Generating Valid pULID Test Data');
 console.log('='.repeat(50));
