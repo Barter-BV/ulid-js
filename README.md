@@ -1,228 +1,265 @@
-# pULID JavaScript 
+# @barter-bv/ulid-js
 
-This repository contains comprehensive guidelines for implementing a pULID (Pixie ULID) library in JavaScript, based on patterns from the ulid-go project.
+A typed pULID implementation compatible with the Barter/Pixie Go implementation. A pULID is a sortable 128-bit identifier containing a timestamp, scope, and cryptographically secure entropy.
 
-The implementation is written in strict TypeScript 7, emits CommonJS for Node.js 20+, and includes generated type declarations.
+The library is written in strict TypeScript 7 and publishes CommonJS JavaScript with generated declaration files and source maps.
 
-## What is pULID?
+## Requirements
 
-pULID is a 128-bit identifier that combines:
-- **48-bit timestamp** (6 bytes, millisecond precision)
-- **16-bit scope** (2 bytes, for entity types or namespaces)
-- **64-bit entropy** (8 bytes, cryptographically secure randomness)
+- Node.js 20 or newer
+- TypeScript is optional for consumers
+- Access to the `Barter-BV` GitHub Packages registry
 
-Key features:
-- ✅ ULID compatible
-- ✅ UUIDv4 compatible
-- ✅ Time based with entropy abstraction optimized
-- ✅ Scope bytes for storing relevant information (entity types, namespaces)
-- ✅ 65,534 available scope types (scope 0 and 65535 are protected)
-- ✅ Lexicographically sortable
-- ✅ Concurrent call optimized
+## Identifier Layout
 
-## Quick Start
+Each pULID contains 16 bytes:
 
-The main implementation guidelines are available in [`README-js-guidelines.md`](./README-js-guidelines.md).
+```text
+  6 bytes       2 bytes       8 bytes
+| timestamp | | scope | | secure entropy |
+```
 
-Install the package from GitHub Packages after configuring npm authentication for the `@barter-bv` scope:
+The 16 bytes can be represented as either:
+
+- A 26-character Crockford Base32 ULID string
+- A 36-character UUID-formatted string
+
+Properties:
+
+- Millisecond timestamp precision
+- Numeric scopes from 1 through 65535
+- Input scope `0` maps to scope `65535` for Go compatibility
+- Lexicographically sortable by timestamp
+- Cryptographically secure entropy from Web Crypto
+- Round-trip conversion between ULID, UUID, and bytes
+
+## Installation
+
+Configure npm to resolve the `@barter-bv` scope through GitHub Packages:
+
+```ini
+@barter-bv:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+Export a token with `read:packages` permission and install the package:
 
 ```shell
+export GITHUB_TOKEN="<github-token>"
 npm install @barter-bv/ulid-js
 ```
 
-Publishing uses the `GH_PACKAGES_TOKEN` GitHub Actions secret. Its token must have `write:packages` access to the `Barter-BV` organization.
+## TypeScript Support
 
-To build, test, validate, and publish the current version manually, export the package token first:
+Type declarations are generated from the source during the build and published at `dist/index.d.ts`. TypeScript resolves them automatically through the package `types` and `exports` fields. No separate `@types` package is required.
+
+The public types include:
+
+- `GenerateOptions`
+- `GeneratorOptions`
+- `GeneratorConfig`
+- `PULIDJSON`
+- `ScopeInfo`
+- `TimestampInfo`
+- `SelfTestResult`
+
+### Generate And Parse
+
+```typescript
+import { pulid, parse, type GenerateOptions, type pULID } from '@barter-bv/ulid-js';
+
+const options: GenerateOptions = {
+  scope: 567,
+  timestamp: Date.now()
+};
+
+const id: string = pulid(options);
+const parsed: pULID = parse(id);
+
+console.log(parsed.toString());
+console.log(parsed.getScope());
+console.log(parsed.getTimestamp());
+console.log(parsed.getTime());
+```
+
+`pulid()` returns a string. Use `generate()` when an instance is needed directly:
+
+```typescript
+import { generate, type pULID } from '@barter-bv/ulid-js';
+
+const id: pULID = generate({ scope: 200 });
+
+console.log(id.toString());
+console.log(id.toUUID());
+console.log(id.toBytes());
+```
+
+### UUID And Byte Conversion
+
+```typescript
+import { pULID } from '@barter-bv/ulid-js';
+
+const original = pULID.generate({ scope: 300 });
+
+const fromUuid = pULID.fromUUID(original.toUUID());
+const fromBytes = pULID.fromBytes(original.toBytes());
+
+console.log(fromUuid.equals(original)); // true
+console.log(fromBytes.equals(original)); // true
+```
+
+### Scoped Generators
+
+Use `scopedGenerator()` when multiple identifiers share the same default scope:
+
+```typescript
+import {
+  scopedGenerator,
+  type GenerateOptions,
+  type pULIDGenerator
+} from '@barter-bv/ulid-js';
+
+const generator: pULIDGenerator = scopedGenerator(567);
+
+const id: string = generator.generateString();
+const uuid: string = generator.generateUUID();
+const batch: string[] = generator.generateBatchStrings(10);
+
+const override: GenerateOptions = { scope: 1000 };
+const overriddenId = generator.generateString(override);
+```
+
+A generator can also produce identifiers for a specific time:
+
+```typescript
+import { pULIDGenerator } from '@barter-bv/ulid-js';
+
+const generator = new pULIDGenerator({ defaultScope: 200 });
+
+const fromDate = generator.generateAt(new Date('2026-01-01T00:00:00Z'));
+const fromIso = generator.generateAt('2026-01-01T00:00:00Z');
+const fromTimestamp = generator.generateAt(1767225600000);
+```
+
+### Custom Entropy
+
+Generation options accept exactly eight entropy bytes. This is useful for deterministic tests and cross-language compatibility fixtures:
+
+```typescript
+import { pulid, type GenerateOptions } from '@barter-bv/ulid-js';
+
+const options: GenerateOptions = {
+  timestamp: 1738019888350,
+  scope: 200,
+  entropy: new Uint8Array([0xae, 0xc6, 0x79, 0x0f, 0xd8, 0xfc, 0xde, 0x19])
+};
+
+const id = pulid(options);
+```
+
+### Validation And Errors
+
+```typescript
+import {
+  isValid,
+  parse,
+  pULIDParseError,
+  pULIDScopeError
+} from '@barter-bv/ulid-js';
+
+if (isValid('01JJN1AD5B08VJ5SRBJAWCBWDQ')) {
+  const parsed = parse('01JJN1AD5B08VJ5SRBJAWCBWDQ');
+  console.log(parsed.getScope());
+}
+
+try {
+  parse('invalid');
+} catch (error: unknown) {
+  if (error instanceof pULIDParseError) {
+    console.error(error.message);
+  }
+}
+
+try {
+  pulid({ scope: 65536 });
+} catch (error: unknown) {
+  if (error instanceof pULIDScopeError) {
+    console.error(error.message);
+  }
+}
+```
+
+### JSON Representation
+
+```typescript
+import { generate, type PULIDJSON } from '@barter-bv/ulid-js';
+
+const value: PULIDJSON = generate({ scope: 200 }).toJSON();
+
+console.log(value.ulid);
+console.log(value.uuid);
+console.log(value.timestamp);
+console.log(value.scope);
+console.log(value.entropy);
+console.log(value.date);
+```
+
+## JavaScript Usage
+
+The runtime package is CommonJS and can be loaded with `require()`:
+
+```javascript
+const {
+  pulid,
+  parse,
+  pULIDGenerator
+} = require('@barter-bv/ulid-js');
+
+const id = pulid({ scope: 567 });
+const parsed = parse(id);
+const generator = new pULIDGenerator({ defaultScope: 200 });
+
+console.log(parsed.toUUID());
+console.log(generator.generateString());
+```
+
+## Main API
+
+| Export | Description |
+|---|---|
+| `pulid(options?)` | Generate a 26-character pULID string. |
+| `generate(options?)` | Generate a `pULID` instance. |
+| `parse(value)` | Parse a pULID string into a `pULID` instance. |
+| `isValid(value)` | Return whether a string is a valid pULID. |
+| `compare(a, b)` | Compare two pULID strings lexicographically. |
+| `scopedGenerator(scope, options?)` | Create a generator with a default scope. |
+| `pULID` | Core identifier class with parsing and conversion methods. |
+| `pULIDGenerator` | Configurable generator class. |
+
+Lower-level encoding, timestamp, scope, UUID, entropy, and error utilities are also exported with generated declarations.
+
+## Development
+
+```shell
+npm install
+npm run typecheck
+npm test
+npm pack --dry-run
+```
+
+The test command performs a clean TypeScript build, runs the JavaScript compatibility suite against `dist/`, and compiles a TypeScript consumer fixture against the published declarations.
+
+## Publishing
+
+The GitHub Actions release workflow uses the `GH_PACKAGES_TOKEN` secret. The token requires `write:packages` access to the `Barter-BV` organization.
+
+For a manual release:
 
 ```shell
 export GH_PACKAGES_TOKEN="<github-token>"
 npm run release
 ```
 
-### API Usage
-
-```javascript
-const { pulid, pULID, pULIDGenerator } = require('@barter-bv/ulid-js');
-
-// Generate a pULID with default scope (1)
-const id = pulid(); // "01JJN0XQ6Y0001N7WGR4NZP1C1Q"
-
-// Generate with custom scope
-const userScopeId = pulid({ scope: 567 }); // "01JJN1AD5B08VJ5SRBJAWCBWDQ"
-
-// Generate with custom timestamp and scope
-const customId = pulid({ timestamp: 1469918176385, scope: 1000 });
-
-// Parse existing pULID
-const parsed = pULID.parse("01JJN0XQ6Y0001N7WGR4NZP1C1Q");
-console.log(parsed.getTime()); // Date object
-console.log(parsed.getScope()); // 1
-
-// Use generator for advanced control
-const generator = new pULIDGenerator({ defaultScope: 567 });
-const id1 = generator.generate();
-const id2 = generator.generate({ scope: 1000 });
-
-// Convert to UUID format
-console.log(parsed.toUUID()); // "0194AA0E-DCDE-0001-53F2-18257F60B037"
-```
-
-TypeScript consumers receive the same named API and generated declarations:
-
-```typescript
-import { pulid, parse, type GenerateOptions } from '@barter-bv/ulid-js';
-
-const options: GenerateOptions = { scope: 567 };
-const id = pulid(options);
-const parsed = parse(id);
-```
-
-## Implementation Checklist
-
-Based on the guidelines, your JavaScript pULID implementation should include:
-
-- [ ] **Base32 Encoding/Decoding**
-  - Crockford's Base32 alphabet: `0123456789ABCDEFGHJKMNPQRSTVWXYZ`
-  - Case-insensitive decoding
-  - Efficient encoding/decoding functions for pULID format
-
-- [ ] **Core Classes**
-  - `pULID` class with timestamp, scope, and entropy components
-  - `pULIDGenerator` class for controlled generation
-  - `TimestampGenerator` for 6-byte timestamps
-  - `ScopeManager` for scope validation and handling
-  - `EntropyGenerator` for 8-byte cryptographically secure entropy
-
-- [ ] **Key Functions**
-  - `pulid(options?)` - Main factory function with scope support
-  - `pULID.parse(string)` - Parse from ULID string
-  - `pULID.fromBytes(bytes)` - Parse from 16-byte array
-  - `pULID.fromUUID(uuid)` - Parse from UUID string
-  - `isValid(string)` - Validation function
-  - `toUUID()` - Convert to UUID format
-
-- [ ] **Scope Management**
-  - Scope validation (1-65534, excluding 0 and 65535)
-  - Default scope handling
-  - Scope-based entity type management
-  - Namespace support through scopes
-
-- [ ] **Error Handling**
-  - `pULIDError` base class
-  - `pULIDParseError` for parsing failures
-  - `pULIDScopeError` for invalid scope values
-  - `pULIDOverflowError` for entropy overflow
-
-- [ ] **Cross-Platform Support**
-  - Browser compatibility (crypto.getRandomValues)
-  - Node.js compatibility (crypto.randomBytes)
-  - TypeScript definitions (optional)
-  - ULID and UUIDv4 compatibility
-
-- [ ] **Testing**
-  - Basic generation tests with scope
-  - Scope validation tests
-  - ULID/UUID compatibility tests
-  - Parsing and validation tests
-  - Edge case handling (protected scopes)
-  - Performance benchmarks
-
-## Key Implementation Details
-
-### pULID Structure
-```
-  6bytes   2bytes    8bytes
-| ------ | | -- | | -------- |
-   epoch.  scope   entropy
-```
-
-Visual representation:
-```
- 01JJN0XQ6Y  0001  N7WGR4NZP1C1Q
-|----------|  |--|  |-----------|
- Timestamp   Scope    Entropy
-  6 bytes   2 bytes   8 bytes
-```
-
-### String Encoding
-- **Total length**: 26 characters (ULID compatible)
-- **Timestamp**: First 10 characters (6 bytes, 48 bits)
-- **Scope**: Characters 11-12 (2 bytes, 16 bits)
-- **Entropy**: Last 14 characters (8 bytes, 64 bits)
-- **Alphabet**: Crockford's Base32 (excludes I, L, O, U)
-
-### Scope Management
-- **Available scopes**: 1-65534 (65,534 total)
-- **Protected scopes**: 0 and 65535 (reserved by library)
-- **Use cases**: Entity types, namespaces, tenant isolation
-- **Default scope**: 1 (when not specified)
-
-### Entropy Behavior
-- **Cryptographically secure**: 8 bytes of random data
-- **Concurrent optimized**: Allows for concurrent calls
-- **No monotonic increment**: Each pULID gets fresh entropy
-
-## Performance Considerations
-
-- Pre-compute Base32 encoding/decoding tables
-- Reuse generator instances
-- Use `Uint8Array` for byte operations
-- Implement object pooling for high-frequency generation
-- Optimize for both single and batch generation
-
-## Testing Strategy
-
-The guidelines include comprehensive testing recommendations:
-
-1. **Functional Tests**: Basic pULID generation, parsing, validation
-2. **Scope Tests**: Scope validation, protected scope handling, entity type management
-3. **Compatibility Tests**: ULID format compatibility, UUID conversion accuracy
-4. **Edge Cases**: Maximum timestamps, invalid scopes (0, 65535), malformed inputs
-5. **Performance Tests**: Generation speed, memory usage, concurrent generation
-6. **Cross-Platform Tests**: Browser and Node.js compatibility
-
-## File Structure
-
-```
-your-pulid-library/
-├── src/
-│   ├── pulid.ts          # Main pULID class
-│   ├── generator.ts      # pULIDGenerator class
-│   ├── encoding.ts       # Base32 encoding/decoding for pULID
-│   ├── entropy.ts        # 8-byte entropy generation
-│   ├── timestamp.ts      # 6-byte timestamp handling
-│   ├── scope.ts          # Scope management and validation
-│   ├── uuid.ts           # UUID compatibility functions
-│   ├── errors.ts         # pULID-specific error classes
-│   └── index.ts          # Main exports
-├── dist/                 # Compiled CommonJS and declarations
-├── test/
-│   ├── pulid.test.js     # Core pULID functionality
-│   ├── generator.test.js # Generator tests
-│   ├── scope.test.js     # Scope validation tests
-│   ├── uuid.test.js      # UUID compatibility tests
-│   ├── encoding.test.js  # Base32 encoding tests
-│   └── performance.test.js # Benchmarks
-├── tsconfig.json
-└── README.md
-```
-
-## Resources
-
-- [ULID Specification](https://github.com/ulid/spec)
-- [Crockford's Base32](https://www.crockford.com/base32.html)
-- [Implementation Guidelines](./ULID_JAVASCRIPT_IMPLEMENTATION_GUIDELINES.md)
-
-## Contributing
-
-When implementing based on these guidelines:
-
-1. Follow the API design patterns outlined in the guidelines
-2. Ensure all test categories are covered
-3. Maintain cross-platform compatibility
-4. Optimize for performance while maintaining correctness
-5. Include comprehensive documentation and examples
-
 ## License
 
-These guidelines are provided as reference material for implementing ULID in JavaScript. Check the specific license requirements for your implementation.
+MIT
