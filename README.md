@@ -22,10 +22,25 @@ Key features:
 
 The main implementation guidelines are available in [`README-js-guidelines.md`](./README-js-guidelines.md).
 
+Install the package from GitHub Packages after configuring npm authentication for the `@barter-bv` scope:
+
+```shell
+npm install @barter-bv/ulid-js
+```
+
+Publishing uses the `GH_PACKAGES_TOKEN` GitHub Actions secret. Its token must have `write:packages` access to the `Barter-BV` organization.
+
+To build, test, validate, and publish the current version manually, export the package token first:
+
+```shell
+export GH_PACKAGES_TOKEN="<github-token>"
+npm run release
+```
+
 ### Expected API Usage
 
 ```javascript
-import { pulid, pULID, pULIDGenerator } from 'your-pulid-library';
+const { pulid, pULID, pULIDGenerator } = require('@barter-bv/ulid-js');
 
 // Generate a pULID with default scope (1)
 const id = pulid(); // "01JJN0XQ6Y0001N7WGR4NZP1C1Q"
