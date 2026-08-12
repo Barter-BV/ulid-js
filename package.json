@@ -1,6 +1,6 @@
 {
   "name": "@barter-bv/ulid-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "pULID - Pixie ULID implementation for JavaScript. A 128-bit identifier combining timestamp, scope, and entropy with ULID and UUIDv4 compatibility.",
   "main": "src/index.js",
   "keywords": [
