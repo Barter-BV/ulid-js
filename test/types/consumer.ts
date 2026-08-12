@@ -5,7 +5,7 @@ import pulid, {
   pULIDGenerator,
   parse,
   scopedGenerator
-} from '@barter-bv/ulid-js';
+} from '@barter-bv/ulid-ts';
 
 const options: GenerateOptions = { scope: 200 };
 const id: string = pulid(options);
