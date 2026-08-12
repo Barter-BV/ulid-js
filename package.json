@@ -1,9 +1,8 @@
 {
-  "name": "@pixie-sh/pulid",
+  "name": "@barter-bv/ulid-js",
   "version": "1.0.0",
   "description": "pULID - Pixie ULID implementation for JavaScript. A 128-bit identifier combining timestamp, scope, and entropy with ULID and UUIDv4 compatibility.",
   "main": "src/index.js",
-  "types": "types/index.d.ts",
   "keywords": [
     "ulid",
     "uuid",
@@ -19,24 +18,27 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pixie-sh-public/ulid-js.git"
+    "url": "git+https://github.com/Barter-BV/ulid-js.git"
   },
   "bugs": {
-    "url": "https://github.com/pixie-sh-public/ulid-js/issues"
+    "url": "https://github.com/Barter-BV/ulid-js/issues"
   },
-  "homepage": "https://github.com/pixie-sh-public/ulid-js#readme",
+  "homepage": "https://github.com/Barter-BV/ulid-js#readme",
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "engines": {
     "node": ">=14.0.0"
   },
   "scripts": {
     "test": "node test/runner.js",
-    "prepublishOnly": "npm test",
+    "prepublishOnly": "npm run build && npm test",
     "lint": "echo 'No linter configured'",
     "build": "echo 'No build step required'"
   },
   "files": [
     "src/",
-    "types/",
     "README.md",
     "LICENSE"
   ],
