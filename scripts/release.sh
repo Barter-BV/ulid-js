@@ -2,12 +2,12 @@
 
 set -eu
 
-NODE_AUTH_TOKEN="${NODE_AUTH_TOKEN:-${GH_PACKAGES_TOKEN:-}}"
+GITHUB_TOKEN="${GITHUB_TOKEN:-${GH_PACKAGES_TOKEN:-}}"
 
-if [ -z "$NODE_AUTH_TOKEN" ]; then
-  echo "Missing package token. Set GH_PACKAGES_TOKEN or NODE_AUTH_TOKEN." >&2
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "Missing package token. Set GH_PACKAGES_TOKEN or GITHUB_TOKEN." >&2
   exit 1
 fi
 
-export NODE_AUTH_TOKEN
+export GITHUB_TOKEN
 npm publish
