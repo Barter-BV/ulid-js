@@ -1,8 +1,16 @@
 {
-  "name": "@barter-bv/ulid-js",
-  "version": "1.0.0",
+  "name": "@barter-bv/ulid-ts",
+  "version": "2.0.1",
   "description": "pULID - Pixie ULID implementation for JavaScript. A 128-bit identifier combining timestamp, scope, and entropy with ULID and UUIDv4 compatibility.",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "keywords": [
     "ulid",
     "uuid",
@@ -29,21 +37,26 @@
     "registry": "https://npm.pkg.github.com"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=20.0.0"
   },
   "scripts": {
-    "test": "node test/runner.js",
-    "prepublish-only": "npm run build && npm test && npm pack --dry-run",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run clean && tsc",
+    "test:runtime": "node test/runner.js",
+    "test:types": "tsc -p test/types/tsconfig.json",
+    "test": "npm run build && npm run test:runtime && npm run test:types",
+    "prepublishOnly": "npm test && npm pack --dry-run",
     "release": "sh scripts/release.sh",
-    "lint": "echo 'No linter configured'",
-    "build": "echo 'No build step required'",
-    "clean": "rm -rf dist node_modules package-lock.json"
+    "lint": "npm run typecheck"
   },
   "files": [
-    "src/",
+    "dist/",
     "README.md",
     "LICENSE"
   ],
-  "devDependencies": {},
-  "dependencies": {}
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2"
+  }
 }

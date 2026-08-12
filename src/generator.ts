@@ -3,16 +3,23 @@
  * Provides configurable generation with default settings
  */
 
-const { pULID } = require('./pulid');
-const { EntropyGenerator } = require('./entropy');
-const { TimestampGenerator } = require('./timestamp');
-const { ScopeManager } = require('./scope');
-const { pULIDError } = require('./errors');
+import { EntropyGenerator } from './entropy';
+import { pULIDError } from './errors';
+import { pULID } from './pulid';
+import { ScopeManager } from './scope';
+import { TimestampGenerator } from './timestamp';
+import type { GenerateOptions, GeneratorConfig, GeneratorOptions } from './types';
 
 /**
  * pULID Generator class for controlled generation
  */
-class pULIDGenerator {
+export class pULIDGenerator {
+  defaultScope: number;
+  readonly validateScope: boolean;
+  readonly entropyGenerator: EntropyGenerator;
+  readonly timestampGenerator: TimestampGenerator;
+  readonly scopeManager: ScopeManager;
+
   /**
    * Create a new pULID generator
    * @param {Object} options - Generator configuration
@@ -22,8 +29,8 @@ class pULIDGenerator {
    * @param {TimestampGenerator} [options.timestampGenerator] - Custom timestamp generator
    * @param {ScopeManager} [options.scopeManager] - Custom scope manager
    */
-  constructor(options = {}) {
-    this.defaultScope = options.defaultScope || 1;
+  constructor(options: GeneratorOptions = {}) {
+    this.defaultScope = options.defaultScope ?? 1;
     this.validateScope = options.validateScope !== false;
     
     // Initialize generators
@@ -45,10 +52,10 @@ class pULIDGenerator {
    * @param {Uint8Array} [options.entropy] - Custom entropy (defaults to random generation)
    * @returns {pULID} New pULID instance
    */
-  generate(options = {}) {
-    const timestamp = options.timestamp || this.timestampGenerator.generate();
+  generate(options: GenerateOptions = {}): pULID {
+    const timestamp = options.timestamp ?? this.timestampGenerator.generate();
     const scope = options.scope !== undefined ? options.scope : this.defaultScope;
-    const entropy = options.entropy || this.entropyGenerator.generate();
+    const entropy = options.entropy ?? this.entropyGenerator.generate();
 
     // Validate scope if validation is enabled
     if (this.validateScope) {
@@ -63,7 +70,7 @@ class pULIDGenerator {
    * @param {Object} options - Generation options
    * @returns {string} 26-character ULID string
    */
-  generateString(options = {}) {
+  generateString(options: GenerateOptions = {}): string {
     return this.generate(options).toString();
   }
 
@@ -72,7 +79,7 @@ class pULIDGenerator {
    * @param {Object} options - Generation options
    * @returns {string} UUID string
    */
-  generateUUID(options = {}) {
+  generateUUID(options: GenerateOptions = {}): string {
     return this.generate(options).toUUID();
   }
 
@@ -82,12 +89,12 @@ class pULIDGenerator {
    * @param {Object} options - Generation options
    * @returns {pULID[]} Array of pULID instances
    */
-  generateBatch(count, options = {}) {
+  generateBatch(count: number, options: GenerateOptions = {}): pULID[] {
     if (typeof count !== 'number' || count < 1) {
       throw new pULIDError(`Invalid count: ${count}. Must be a positive number`);
     }
 
-    const results = [];
+    const results: pULID[] = [];
     for (let i = 0; i < count; i++) {
       results.push(this.generate(options));
     }
@@ -100,22 +107,8 @@ class pULIDGenerator {
    * @param {Object} options - Generation options
    * @returns {string[]} Array of ULID strings
    */
-  generateBatchStrings(count, options = {}) {
+  generateBatchStrings(count: number, options: GenerateOptions = {}): string[] {
     return this.generateBatch(count, options).map(pulid => pulid.toString());
-  }
-
-  /**
-   * Generate pULID for a specific entity type
-   * @param {string} entityType - Entity type name
-   * @param {Object} options - Additional generation options
-   * @returns {pULID} New pULID instance with entity-specific scope
-   */
-  generateForEntity(entityType, options = {}) {
-    const scope = this.scopeManager.getScopeForEntity(entityType);
-    return this.generate({
-      ...options,
-      scope
-    });
   }
 
   /**
@@ -124,8 +117,8 @@ class pULIDGenerator {
    * @param {Object} options - Additional generation options
    * @returns {pULID} New pULID instance
    */
-  generateAt(timestamp, options = {}) {
-    let ts;
+  generateAt(timestamp: number | Date | string, options: GenerateOptions = {}): pULID {
+    let ts: number;
     
     if (typeof timestamp === 'number') {
       ts = timestamp;
@@ -147,7 +140,7 @@ class pULIDGenerator {
    * Set the default scope for this generator
    * @param {number} scope - New default scope
    */
-  setDefaultScope(scope) {
+  setDefaultScope(scope: number): void {
     if (this.validateScope) {
       this.scopeManager.validate(scope);
     }
@@ -158,7 +151,7 @@ class pULIDGenerator {
    * Get the current default scope
    * @returns {number} Current default scope
    */
-  getDefaultScope() {
+  getDefaultScope(): number {
     return this.defaultScope;
   }
 
@@ -166,7 +159,7 @@ class pULIDGenerator {
    * Get generator configuration
    * @returns {Object} Current configuration
    */
-  getConfig() {
+  getConfig(): GeneratorConfig {
     // If defaultScope is 0, report MAX_SCOPE in the configuration
     const reportedScope = this.defaultScope === 0 ? 65535 : this.defaultScope;
 
@@ -186,7 +179,7 @@ class pULIDGenerator {
  * @param {Object} options - Additional generator options
  * @returns {pULIDGenerator} New generator with the specified default scope
  */
-function createScopedGenerator(scope, options = {}) {
+export function createScopedGenerator(scope: number, options: GeneratorOptions = {}): pULIDGenerator {
   return new pULIDGenerator({
     ...options,
     defaultScope: scope
@@ -196,14 +189,14 @@ function createScopedGenerator(scope, options = {}) {
 /**
  * Default pULID generator instance
  */
-const defaultGenerator = new pULIDGenerator();
+export const defaultGenerator = new pULIDGenerator();
 
 /**
  * Generate a pULID using the default generator
  * @param {Object} options - Generation options
  * @returns {pULID} New pULID instance
  */
-function generate(options = {}) {
+export function generate(options: GenerateOptions = {}): pULID {
   return defaultGenerator.generate(options);
 }
 
@@ -212,14 +205,6 @@ function generate(options = {}) {
  * @param {Object} options - Generation options
  * @returns {string} ULID string
  */
-function generateString(options = {}) {
+export function generateString(options: GenerateOptions = {}): string {
   return defaultGenerator.generateString(options);
 }
-
-module.exports = {
-  pULIDGenerator,
-  createScopedGenerator,
-  defaultGenerator,
-  generate,
-  generateString
-};

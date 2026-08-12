@@ -1,4 +1,4 @@
-const { decodeBase32, encodeBase32 } = require('../src/encoding');
+const { decodeBase32, encodeBase32 } = require('../dist/encoding');
 
 // Test with golang README examples
 const golangExamples = [

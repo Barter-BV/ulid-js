@@ -5,7 +5,7 @@
  * Shows correct functionality with entity scopes, ULID/UUID conversion, and parsing
  */
 
-const {pulid, pULID, parse, test, scopedGenerator} = require('../src');
+const {pulid, pULID, parse, test, scopedGenerator} = require('..');
 
 console.log('🎯 pULID JavaScript Implementation - Working Demo');
 console.log('='.repeat(60));

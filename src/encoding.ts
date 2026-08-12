@@ -7,11 +7,11 @@
  */
 
 // The encoding table from the Go implementation (globals.go)
-const ENCODING = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export const ENCODING = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
 // Create a lookup table for decoding, similar to the c2b32 table in Go
 // The table maps each character code to its value (0-31) or 0xFF for invalid characters
-const C2B32 = new Array(256).fill(0xFF); // Initialize all as invalid
+export const C2B32: number[] = new Array<number>(256).fill(0xFF); // Initialize all as invalid
 
 // Fill in valid character mappings (exactly as in Go implementation)
 for (let i = 0; i < ENCODING.length; i++) {
@@ -34,13 +34,13 @@ C2B32['U'.charCodeAt(0)] = C2B32['u'.charCodeAt(0)] = 22; // U -> V (at index 22
  * @param {Uint8Array} id - 16-byte array to encode
  * @returns {string} 26-character Base32 encoded string
  */
-function encodeBase32(id) {
+export function encodeBase32(id: Uint8Array): string {
   if (!id || id.length !== 16) {
     throw new Error(`Invalid ULID bytes: expected 16 bytes, got ${id ? id.length : 0}`);
   }
   
   // Create a buffer for the encoded string (26 characters)
-  const dst = new Array(26);
+  const dst = new Array<string>(26);
   
   // Encode timestamp part (bytes 0-5)
   dst[0] = ENCODING.charAt((id[0] & 224) >> 5);
@@ -81,7 +81,7 @@ function encodeBase32(id) {
  * @param {string} str - 26-character Base32 encoded string
  * @returns {Uint8Array} 16-byte array
  */
-function decodeBase32(str) {
+export function decodeBase32(str: string): Uint8Array {
   if (typeof str !== 'string') {
     throw new Error(`Invalid input type: ${typeof str}. Expected string`);
   }
@@ -133,7 +133,7 @@ function decodeBase32(str) {
  * @param {Uint8Array} bytes - 16-byte ULID
  * @returns {number} Timestamp in milliseconds
  */
-function bytesToTimestamp(bytes) {
+export function bytesToTimestamp(bytes: Uint8Array): number {
   // Extract timestamp from first 6 bytes (big-endian)
   // Using proper JavaScript arithmetic to avoid integer overflow
   let timestamp = 0;
@@ -148,7 +148,7 @@ function bytesToTimestamp(bytes) {
  * @param {Uint8Array} bytes - 16-byte ULID
  * @returns {number} Scope value
  */
-function bytesToScope(bytes) {
+export function bytesToScope(bytes: Uint8Array): number {
   return (bytes[6] << 8) | bytes[7];
 }
 
@@ -157,16 +157,6 @@ function bytesToScope(bytes) {
  * @param {Uint8Array} bytes - 16-byte ULID
  * @returns {Uint8Array} 8-byte entropy
  */
-function bytesToEntropy(bytes) {
+export function bytesToEntropy(bytes: Uint8Array): Uint8Array {
   return bytes.slice(8, 16);
 }
-
-module.exports = {
-  ENCODING,
-  C2B32,
-  encodeBase32,
-  decodeBase32,
-  bytesToTimestamp,
-  bytesToScope,
-  bytesToEntropy
-};

@@ -3,12 +3,16 @@
  * Handles conversion between pULID bytes and UUID string format
  */
 
-const { pULIDUUIDError } = require('./errors');
+import { pULIDUUIDError } from './errors';
 
 /**
  * UUID utility class for pULID compatibility
  */
-class UUIDConverter {
+export class UUIDConverter {
+  readonly UUID_REGEX: RegExp;
+  readonly UUID_LENGTH: number;
+  readonly HEX_LENGTH: number;
+
   constructor() {
     // UUID format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
     this.UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -22,7 +26,7 @@ class UUIDConverter {
    * @returns {boolean} True if valid
    * @throws {pULIDUUIDError} If UUID format is invalid
    */
-  validate(uuid) {
+  validate(uuid: string): true {
     if (typeof uuid !== 'string') {
       throw new pULIDUUIDError(`Invalid UUID type: ${typeof uuid}. Expected string`);
     }
@@ -43,7 +47,7 @@ class UUIDConverter {
    * @param {string} uuid - UUID string to check
    * @returns {boolean} True if valid
    */
-  isValid(uuid) {
+  isValid(uuid: string): boolean {
     try {
       return this.validate(uuid);
     } catch (error) {
@@ -56,7 +60,7 @@ class UUIDConverter {
    * @param {Uint8Array} bytes - 16-byte array (6+2+8 pULID structure)
    * @returns {string} UUID string in format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
    */
-  formatAsUUID(bytes) {
+  formatAsUUID(bytes: Uint8Array): string {
     if (!bytes || bytes.length !== 16) {
       throw new pULIDUUIDError(`Invalid byte array: expected 16 bytes, got ${bytes ? bytes.length : 0}`);
     }
@@ -83,7 +87,7 @@ class UUIDConverter {
    * @param {string} uuid - UUID string
    * @returns {Uint8Array} 16-byte array
    */
-  uuidToBytes(uuid) {
+  uuidToBytes(uuid: string): Uint8Array {
     this.validate(uuid);
 
     // Remove hyphens and convert to lowercase
@@ -114,7 +118,7 @@ class UUIDConverter {
    * @param {string} uuid - UUID string
    * @returns {number} Timestamp in milliseconds
    */
-  extractTimestamp(uuid) {
+  extractTimestamp(uuid: string): number {
     const bytes = this.uuidToBytes(uuid);
     let timestamp = 0;
     
@@ -131,7 +135,7 @@ class UUIDConverter {
    * @param {string} uuid - UUID string
    * @returns {number} Scope value (returns 0 if MAX_SCOPE is detected)
    */
-  extractScope(uuid) {
+  extractScope(uuid: string): number {
     const bytes = this.uuidToBytes(uuid);
 
     // Bytes 6-7 are scope
@@ -146,7 +150,7 @@ class UUIDConverter {
    * @param {string} uuid - UUID string
    * @returns {Uint8Array} 8 bytes of entropy
    */
-  extractEntropy(uuid) {
+  extractEntropy(uuid: string): Uint8Array {
     const bytes = this.uuidToBytes(uuid);
     
     // Last 8 bytes are entropy
@@ -160,7 +164,7 @@ class UUIDConverter {
    * @param {Uint8Array} entropy - 8 bytes of entropy
    * @returns {string} UUID string
    */
-  createUUID(timestamp, scope, entropy) {
+  createUUID(timestamp: number, scope: number, entropy: Uint8Array): string {
     if (entropy.length !== 8) {
       throw new pULIDUUIDError(`Invalid entropy length: ${entropy.length}. Expected 8 bytes`);
     }
@@ -190,17 +194,10 @@ class UUIDConverter {
    * Generate a random UUID for testing
    * @returns {string} Random UUID string
    */
-  generateRandomUUID() {
+  generateRandomUUID(): string {
     const bytes = new Uint8Array(16);
     
-    // Use crypto if available, otherwise fallback to Math.random
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-      crypto.getRandomValues(bytes);
-    } else {
-      for (let i = 0; i < 16; i++) {
-        bytes[i] = Math.floor(Math.random() * 256);
-      }
-    }
+    globalThis.crypto.getRandomValues(bytes);
 
     return this.formatAsUUID(bytes);
   }
@@ -211,7 +208,7 @@ class UUIDConverter {
    * @param {string} uuid2 - Second UUID
    * @returns {number} -1, 0, or 1 for less than, equal, or greater than
    */
-  compare(uuid1, uuid2) {
+  compare(uuid1: string, uuid2: string): number {
     this.validate(uuid1);
     this.validate(uuid2);
     
@@ -227,14 +224,14 @@ class UUIDConverter {
 /**
  * Default UUID converter instance
  */
-const defaultUUIDConverter = new UUIDConverter();
+export const defaultUUIDConverter = new UUIDConverter();
 
 /**
  * Convert bytes to UUID using default converter
  * @param {Uint8Array} bytes - 16-byte array
  * @returns {string} UUID string
  */
-function formatAsUUID(bytes) {
+export function formatAsUUID(bytes: Uint8Array): string {
   return defaultUUIDConverter.formatAsUUID(bytes);
 }
 
@@ -243,7 +240,7 @@ function formatAsUUID(bytes) {
  * @param {string} uuid - UUID string
  * @returns {Uint8Array} 16-byte array
  */
-function uuidToBytes(uuid) {
+export function uuidToBytes(uuid: string): Uint8Array {
   return defaultUUIDConverter.uuidToBytes(uuid);
 }
 
@@ -252,7 +249,7 @@ function uuidToBytes(uuid) {
  * @param {string} uuid - UUID string
  * @returns {boolean} True if valid
  */
-function validateUUID(uuid) {
+export function validateUUID(uuid: string): true {
   return defaultUUIDConverter.validate(uuid);
 }
 
@@ -261,7 +258,7 @@ function validateUUID(uuid) {
  * @param {string} uuid - UUID string
  * @returns {boolean} True if valid
  */
-function isValidUUID(uuid) {
+export function isValidUUID(uuid: string): boolean {
   return defaultUUIDConverter.isValid(uuid);
 }
 
@@ -272,16 +269,6 @@ function isValidUUID(uuid) {
  * @param {Uint8Array} entropy - 8 bytes of entropy
  * @returns {string} UUID string
  */
-function createUUID(timestamp, scope, entropy) {
+export function createUUID(timestamp: number, scope: number, entropy: Uint8Array): string {
   return defaultUUIDConverter.createUUID(timestamp, scope, entropy);
 }
-
-module.exports = {
-  UUIDConverter,
-  defaultUUIDConverter,
-  formatAsUUID,
-  uuidToBytes,
-  validateUUID,
-  isValidUUID,
-  createUUID
-};

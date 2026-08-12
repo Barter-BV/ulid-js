@@ -1,3 +1,6 @@
 /.idea/
 .env
+dist/
+node_modules/
+*.tgz
 .opencode/

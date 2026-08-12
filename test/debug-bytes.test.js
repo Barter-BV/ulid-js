@@ -1,4 +1,4 @@
-const { decodeBase32 } = require('../src/encoding');
+const { decodeBase32 } = require('../dist/encoding');
 
 // Let's examine the first golang pULID to understand the byte structure
 const testUlid = '01K1JSNY9T034AXHKS1ZCFSQGS';
@@ -49,7 +49,7 @@ if (bytes.length === expectedBytes.length) {
 }
 
 // Test reverse encoding - encode expected bytes to see what ULID we get
-const { encodeBase32 } = require('../src/encoding');
+const { encodeBase32 } = require('../dist/encoding');
 const encodedFromExpected = encodeBase32(new Uint8Array(expectedBytes));
 console.log('\nReverse encoding test:');
 console.log('Expected bytes encoded to ULID:', encodedFromExpected);
