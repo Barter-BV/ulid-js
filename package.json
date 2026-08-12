@@ -33,7 +33,8 @@
   },
   "scripts": {
     "test": "node test/runner.js",
-    "prepublishOnly": "npm run build && npm test",
+    "prepublishOnly": "npm run build && npm test && npm pack --dry-run",
+    "release": "sh scripts/release.sh",
     "lint": "echo 'No linter configured'",
     "build": "echo 'No build step required'"
   },

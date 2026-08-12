@@ -16,6 +16,8 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,7 +31,7 @@ jobs:
           scope: '@barter-bv'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Verify release version
         if: github.event_name == 'release'
@@ -42,13 +44,5 @@ jobs:
             exit 1
           }
 
-      - name: Build and test
-        run: npm run build && npm test
-
-      - name: Validate package contents
-        run: npm pack --dry-run
-
-      - name: Publish to GitHub Packages
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+      - name: Build and publish to GitHub Packages
+        run: npm run release

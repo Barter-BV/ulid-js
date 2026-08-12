@@ -30,6 +30,13 @@ npm install @barter-bv/ulid-js
 
 Publishing uses the `GH_PACKAGES_TOKEN` GitHub Actions secret. Its token must have `write:packages` access to the `Barter-BV` organization.
 
+To build, test, validate, and publish the current version manually, export the package token first:
+
+```shell
+export GH_PACKAGES_TOKEN="<github-token>"
+npm run release
+```
+
 ### Expected API Usage
 
 ```javascript
